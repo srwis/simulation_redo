@@ -1,0 +1,71 @@
+---
+title: "exploring the simulation data"
+output: html_notebook
+---
+
+lets explore the simulation data I have as of 5-9-2017. Which should be all of the simulations with 1000 Codons, and 3 alpha and omega rate categories
+
+```{r load_dat}
+library(dplyr)
+library(stringr)
+library(readr)
+All_5_8_17_processed <- read_csv("C:/Users/srwisots/Desktop/tmp/simulation_redo/final_results/All_5_8_17_processed.csv")
+```
+
+
+```{r}
+pwr_tab <- function(dat) {
+  
+  
+  A1.dat = dat
+  A1.basic = A1.dat %>% group_by(True.omega3.value, True.CV) %>% summarise(num_reps = n())
+  
+  A1.BUSTED = A1.dat %>% group_by(True.omega3.value,True.CV ) %>% filter(BUSTED.P <
+                                                                               0.05) %>% tally()
+  A1.BUSTED = rename(A1.BUSTED, "BUSTED_PWR" = n)
+  
+  A1.SRV = A1.dat %>%  group_by(True.omega3.value, True.CV) %>% filter(BUSTED.SRV.P <
+                                                                              0.05) %>%  tally()
+  A1.SRV = rename(A1.SRV, "SRV_PWR" = n)
+  
+  A1.pwr.tab = full_join(A1.BUSTED, A1.SRV, by = c("True.omega3.value", "True.CV")) %>% 
+    full_join(., A1.basic, by = c("True.omega3.value", "True.CV"))
+  
+  
+  
+  A1.means = A1.dat %>% group_by(True.omega3.value) %>%   summarise(
+    "$BUSTED \\omega_3$ MLE" = mean(BUSTED.omega3.MLE),
+    "SRV $\\omega_3$ MLE" = mean(BUSTED.SRV.omega3.MLE),
+    "Mean CV" = mean(CV.SRV)
+  )
+  A1.pwr.tab = full_join(A1.pwr.tab, A1.means, by = "True.omega3.value")
+  A1.pwr.tab = replace(A1.pwr.tab, is.na(A1.pwr.tab), 0)
+  A1.pwr.tab$BUSTED_PWR = A1.pwr.tab$BUSTED_PWR / A1.pwr.tab$num_reps
+  A1.pwr.tab$SRV_PWR = A1.pwr.tab$SRV_PWR / A1.pwr.tab$num_reps
+  return(A1.pwr.tab)
+}
+```
+
+```{r}
+library(ggplot2)
+
+All_5_8_17_processed %>% group_by(True.CV,True.omega3.value) %>% count()
+
+power_cal= pwr_tab(All_5_8_17_processed)
+power_cal%>% select(one_of(
+c("True.omega3.value", "True.CV", "BUSTED_PWR", "SRV_PWR")
+)) %>% melt(id.vars = c("True.omega3.value", "True.CV")) %>% ggplot(aes(
+x = True.omega3.value,
+y = value,
+color = interaction(True.CV, variable, sep = " ")
+)) +
+geom_point() + geom_smooth() + labs(x = expression("True "*omega[3]), y = "Power", color = "CV and Analysis") 
+
+temp=   power_cal %>% select(one_of(
+  c("True.omega3.value", "True.CV", "BUSTED_PWR", "SRV_PWR")
+)) %>% melt(id.vars = c("True.omega3.value", "True.CV"))
+ temp%>% ggplot(aes(x=True.omega3.value, y = True.CV))+ geom_tile(aes(fill = value))+ facet_grid(~variable)+
+  labs(x =expression("True "*omega[3]), y = "True CV of SRV", color = "Power")
+
+```
+
