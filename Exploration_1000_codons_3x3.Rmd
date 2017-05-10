@@ -9,7 +9,7 @@ lets explore the simulation data I have as of 5-9-2017. Which should be all of t
 library(dplyr)
 library(stringr)
 library(readr)
-All_5_8_17_processed <- read_csv("C:/Users/srwisots/Desktop/tmp/simulation_redo/final_results/All_5_8_17_processed.csv")
+All_5_8_17_processed <- read_csv("final_results/All_5_8_17_processed.csv")
 ```
 
 
@@ -48,6 +48,7 @@ pwr_tab <- function(dat) {
 
 ```{r}
 library(ggplot2)
+library(reshape2)
 
 All_5_8_17_processed %>% group_by(True.CV,True.omega3.value) %>% count()
 
