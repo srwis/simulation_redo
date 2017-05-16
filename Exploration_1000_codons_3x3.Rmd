@@ -9,11 +9,17 @@ lets explore the simulation data I have as of 5-9-2017. Which should be all of t
 library(dplyr)
 library(stringr)
 library(readr)
-All_5_8_17_processed <- read_csv("final_results/All_5_8_17_processed.csv")
+All_5_8_17_processed <- read_csv("final_results/All_5_15_17_processed.csv")
+```
+
+```{r}
+#look at data
+
+All_5_8_17_processed %>% group_by(Sites, True.CV,True.omega3.value) %>% count()
 ```
 
 
-```{r}
+```{r power_cal_function}
 pwr_tab <- function(dat) {
   
   
@@ -46,21 +52,25 @@ pwr_tab <- function(dat) {
 }
 ```
 
-```{r}
+```{r exploration}
 library(ggplot2)
 library(reshape2)
 
 All_5_8_17_processed %>% group_by(True.CV,True.omega3.value) %>% count()
+```
 
+```{r}
 power_cal= pwr_tab(All_5_8_17_processed)
-power_cal%>% select(one_of(
-c("True.omega3.value", "True.CV", "BUSTED_PWR", "SRV_PWR")
-)) %>% melt(id.vars = c("True.omega3.value", "True.CV")) %>% ggplot(aes(
-x = True.omega3.value,
-y = value,
-color = interaction(True.CV, variable, sep = " ")
-)) +
-geom_point() + geom_smooth() + labs(x = expression("True "*omega[3]), y = "Power", color = "CV and Analysis") 
+power_cal %>% select(one_of(c(
+  "True.omega3.value", "True.CV", "BUSTED_PWR", "SRV_PWR"
+  ))) %>% melt(id.vars = c("True.omega3.value", "True.CV")) %>% ggplot(aes(
+  x = True.omega3.value,
+  y = value,
+  color = interaction(True.CV, variable, sep = " ")
+  )) +
+  geom_point() + geom_smooth() + labs(x = expression("True " * omega[3]),
+  y = "Power",
+  color = "CV and Analysis") 
 
 temp=   power_cal %>% select(one_of(
   c("True.omega3.value", "True.CV", "BUSTED_PWR", "SRV_PWR")
