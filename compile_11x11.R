@@ -9,41 +9,41 @@ library(dplyr)
 
 compile <- function(cur.dir,csv){
   jsons <- list.files(path = cur.dir,
-                      pattern = '*.json', recursive = TRUE)
+                      pattern = '*.json', recursive = TRUE) # list all of the json files in a given directory and the subdirectories in it
   
-  #create empty data.frame with variable names
-  names = c("FILE", "BUSTED.LR", "BUSTED.SRV.LR", "BUSTED.omega3.MLE", "BUSTED.SRV.omega3.MLE", "BUSTED.omega3.prop",
-            "BUSTED.SRV.omega3.prop", 'CV.SRV', 'BUSTED.P', 'BUSTED.SRV.P','BUSTED.AICc','BUSTED.SRV.AICc',
-            'BUSTED.treelength' ,'BUSTED.SRV.treelength', 'Sites', 'Sequences', 
-            'BUSTED.omega1.MLE','BUSTED.SRV.omega1.MLE', 'BUSTED.omega1.prop','BUSTED.SRV.omega1.prop',
-            'BUSTED.omega2.MLE','BUSTED.SRV.omega2.MLE', 'BUSTED.omega2.prop','BUSTED.SRV.omega2.prop', 'SRV.alpha3.MLE',
-            'SRV.alpha3.prop','SRV.alpha1.MLE','SRV.alpha1.prop','SRV.alpha2.MLE','SRV.alpha2.prop')
-  
-  classes = c("character", "numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric",
-              "numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric",
-              "numeric","numeric","numeric")
-  df =read.table(text="", col.names = names, colClasses = classes)
+
+  df<- NULL
+  #create a table with 78 variables to fill 
+  #step thru list of json files and read info from them
+  #increments of two because want one line for each rep that includes BUSTED and BUSTED-SRV info
   for (i in  seq(from=1, to=length(jsons), by=2)){
-    filepath = paste(cur.dir,jsons[i], sep="")
-    test = filepath %>% readLines() %>% gsub(x=.,pattern="nan",replacement ='"NA"') %>% fromJSON()
+    filepath = paste(cur.dir,jsons[i], sep="") #file path of the current json
     
+    test = filepath %>% readLines() %>% gsub(x=.,pattern="nan",replacement ='"NA"') %>% fromJSON() #read the JSON in
+                                                                                                   #have to account for weird behavior caused by nan vs NA 
     
+    FILE = jsons[i] #get name of file (useful for matching later)
+    Sites = length(test$profiles$unconstrained) #get number of sites
     
-    FILE = jsons[i]
-    Sites = length(test$profiles$unconstrained)
-    tree_string = test$fits$`Unconstrained model`$`tree string`
+    tree_string = test$fits$`Unconstrained model`$`tree string` # get tree string
+    #from that can get branch names and lengths:
     x= tree_string %>% str_replace_all("\\(",":") %>% str_replace_all("\\)",":") %>%     str_replace_all(",",":") %>% str_split(":")
     x= unlist(x)
     x =x[x !=""]
     br_len = matrix(x,ncol = 2,  byrow = T)
     colnames(br_len) = c("Branch", "Length")
     
-    Sequences = sum(grepl("Node*", br_len[,1]) == FALSE)
+    
+    Sequences = sum(grepl("Node*", br_len[,1]) == FALSE) #number of non Node named branch is the numb of seqs started with
+    
+    #now we get to the trickier part
+    #reading in BUSTED and BUSTED-SRV results
     
     if (grepl("BUSTED-SRV",jsons[i])){
+      #getting BUSTED-SRV results for a file
       filepath = paste(cur.dir,jsons[i], sep="")
       
-      test = filepath %>% readLines() %>% gsub(x=.,pattern="nan",replacement ='"NA"') %>% fromJSON()      
+      test = filepath %>% readLines() %>% gsub(x=.,pattern="nan",replacement ='"NA"') %>% fromJSON() #read in json     
       
       
       BUSTED.SRV.P = test$`test results`$p
@@ -52,12 +52,14 @@ compile <- function(cur.dir,csv){
       BUSTED.SRV.treelength = test$fits$`Unconstrained model`$`tree length`
       
       #OMEGA values for BUSTED.SRV
-      BUSTED.SRV.omega3.MLE = test$fits$`Unconstrained model`$`rate distributions`$FG[3,1]
-      BUSTED.SRV.omega3.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[3,2]
-      BUSTED.SRV.omega2.MLE = test$fits$`Unconstrained model`$`rate distributions`$FG[2,1]
-      BUSTED.SRV.omega2.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[2,2]
-      BUSTED.SRV.omega1.MLE = test$fits$`Unconstrained model`$`rate distributions`$FG[1,1]
-      BUSTED.SRV.omega1.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[1,2]
+      srv.omega.rates = test$fits$`Unconstrained model`$`rate distributions`$FG[,1]
+      names(srv.omega.rates) =
+      # BUSTED.SRV.omega3.MLE = test$fits$`Unconstrained model`$`rate distributions`$FG[3,1]
+      # BUSTED.SRV.omega3.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[3,2]
+      # BUSTED.SRV.omega2.MLE = test$fits$`Unconstrained model`$`rate distributions`$FG[2,1]
+      # BUSTED.SRV.omega2.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[2,2]
+      # BUSTED.SRV.omega1.MLE = test$fits$`Unconstrained model`$`rate distributions`$FG[1,1]
+      # BUSTED.SRV.omega1.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[1,2]
       #ALPHA values for BUSTED.SRV
       SRV.alpha3.MLE = test$fits$`Unconstrained model`$`rate distributions`$SRV[3,1]
       SRV.alpha3.prop = test$fits$`Unconstrained model`$`rate distributions`$SRV[3,2]
@@ -88,22 +90,12 @@ compile <- function(cur.dir,csv){
       BUSTED.omega2.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[2,2]
       BUSTED.omega1.MLE = test$fits$`Unconstrained model`$`rate distributions`$FG[1,1]
       BUSTED.omega1.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[1,2]
-      #ALPHA values for BUSTED
-      #       BUSTED.alpha3.MLE = test$fits$`Unconstrained model`$`rate distributions`$SRV[3,1]
-      #       BUSTED.alpha3.prop = test$fits$`Unconstrained model`$`rate distributions`$SRV[3,2]
-      #       BUSTED.alpha2.MLE = test$fits$`Unconstrained model`$`rate distributions`$SRV[2,1]
-      #       BUSTED.alpha2.prop = test$fits$`Unconstrained model`$`rate distributions`$SRV[2,2]
-      #       BUSTED.alpha1.MLE = test$fits$`Unconstrained model`$`rate distributions`$SRV[1,1]
-      #       BUSTED.alpha1.prop = test$fits$`Unconstrained model`$`rate distributions`$SRV[1,2]
+ 
       
     }
     #print(FILE)
-    df[nrow(df)+1,] <- c(FILE, BUSTED.LR, BUSTED.SRV.LR, BUSTED.omega3.MLE, BUSTED.SRV.omega3.MLE, BUSTED.omega3.prop,
-                         BUSTED.SRV.omega3.prop, CV.SRV, BUSTED.P, BUSTED.SRV.P,BUSTED.AICc,BUSTED.SRV.AICc,
-                         BUSTED.treelength ,BUSTED.SRV.treelength, Sites, Sequences, 
-                         BUSTED.omega1.MLE,BUSTED.SRV.omega1.MLE, BUSTED.omega1.prop,BUSTED.SRV.omega1.prop,
-                         BUSTED.omega2.MLE,BUSTED.SRV.omega2.MLE, BUSTED.omega2.prop,BUSTED.SRV.omega2.prop, SRV.alpha3.MLE,
-                         SRV.alpha3.prop,SRV.alpha1.MLE,SRV.alpha1.prop,SRV.alpha2.MLE,SRV.alpha2.prop)
+    df <-rbind(df, c(FILE, BUSTED.LR, BUSTED.SRV.LR, CV.SRV, BUSTED.P, BUSTED.SRV.P,BUSTED.AICc,BUSTED.SRV.AICc,
+                         BUSTED.treelength ,BUSTED.SRV.treelength, Sites, Sequences,))
     
   }
   df[,2:30]=as.numeric(unlist(df[,2:30]))
@@ -117,11 +109,8 @@ simulation_inputs <- function(dir,csv){
   require("dplyr")
   list = list.files(path = dir, recursive = T, pattern ="^([^.]+)$")
   #set up the empty data frame
-  #names = c("Sites" ,"Cat", "Omega 1 value", "Omega 2 value", "Omega 3 value", "Omega 1 prop", "Omega 2 prop", "Omega 3 prop",
-            #"Alpha 1 value", "Alpha 2 value", "Alpha 3 value","Alpha 1 prop", "Alpha 2 prop", "Alpha 3 prop")
-  names = c("Sites","File" , paste("Omega",seq(from=1, to = 11, by =1), "value" ), paste("Omega",seq(from=1, to = 11, by =1), "prop" ),
-            paste("Alpha",seq(from=1, to = 11, by =1), "value" ), paste("Alpha",seq(from=1, to = 11, by =1), "prop" ),"CV.SRV")
-  setup.tab = read.table(text = "",col.names = names)
+
+  setup.tab <- NULL
   #loop thru each file to get info in correct format
   for(i in seq(from = 1, to= length(list))){
     x=readLines(paste(dir,list[i], sep = "/"))
@@ -147,24 +136,18 @@ simulation_inputs <- function(dir,csv){
     Alpha_weights = r$`alpha distribution`[,2]
     names(Alpha_weights) = paste("Alpha",seq(from=1, to = r$`alpha rate count`, by =1), "prop" )
     
-    
-    
-    
-    
     mom2 = sum(Alpha_rates^2*Alpha_weights)
     
     mean = sum(Alpha_rates*Alpha_weights)
     
     CV.SRV = sqrt(mom2-mean^2)/mean
-    setup.tab[nrow(setup.tab)+1,] = c(r$sites,list[i], omega_rates,omega_weights,Alpha_rates,Alpha_weights,CV.SRV)
-    
+   
+    setup.tab = rbind(setup.tab,c(r$sites,list[i], omega_rates,omega_weights,Alpha_rates,Alpha_weights,CV.SRV))
   }
-  #setup.tab =select(setup.tab, File,Sites,  Omega.1.value, Omega.1.prop, Omega.2.value, Omega.2.prop,Omega.3.value, Omega.3.prop,
-                   # Alpha.1.value, Alpha.1.prop, Alpha.2.value, Alpha.2.prop,Alpha.3.value, Alpha.3.prop)
-  #setup.tab[,3:14] = as.numeric(unlist(setup.tab[,3:14]))
 
-  return(setup.tab)
-  #write.csv(file = csv, x = setup.tab, row.names= F)
+
+  #return(setup.tab)
+  write.csv(file = csv, x = setup.tab, row.names= F)
 }
 
 add_truth <- function(dat, truth){
