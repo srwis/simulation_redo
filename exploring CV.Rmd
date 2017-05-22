@@ -1,0 +1,69 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+library(dplyr)
+truth = read_csv("final_results/All_5_8_17_Truth.csv")
+
+truth %>% filter(Sites==1000)%>% group_by(CV.SRV) %>% count
+
+truth %>% filter(Sites==1000, str_detect(File, "temp")==FALSE)%>% group_by(CV.SRV) %>% count
+
+truth %>% filter(Sites==5000, str_detect(File, "temp")==FALSE)%>% group_by(CV.SRV) %>% count
+
+truth %>% filter(Sites==10000, str_detect(File, "temp")==FALSE)%>% group_by(CV.SRV) %>% count
+
+
+truth %>% filter(Omega.3.value == 1, CV.SRV == 0)
+
+truth %>% filter(Sites ==1000, CV.SRV <=0.59) 
+
+```
+
+```{r}
+
+CV.SRV <- function(SRV.MLE, SRV.prop){
+mom2 = sum(SRV.MLE^2*SRV.prop)
+mean= sum(SRV.MLE*SRV.prop)
+CV.SRV = sqrt(mom2-mean^2)/mean
+return(CV.SRV)
+}
+SRV.MLE = c(0.499, 0.99,1.5)
+SRV.prop = c(rep(0.334,2),0.333)
+
+CV.SRV(SRV.MLE, SRV.prop)
+
+cv = vector()
+l.v = vector()
+n.v = vector()
+k=1
+for(n in seq(from = 0.000133, to = 3.05, by = 0.5)){
+  for(l in seq(from = 0.000133, to = 1, by = 0.5)){
+    if(l<=n){
+      print(c("l = ",l, "\n", "n = ", n))
+      SRV.MLE = c(seq(from=0.0001333333333333334, to=), l,n)
+      SRV.prop = c(rep(0.333,2),0.334)
+      cv[k]=CV.SRV(SRV.MLE, SRV.prop)
+      l.v[k] = l
+      n.v[k] = n
+      k=k+1
+    }
+  }
+}
+
+plot(cv)
+
+new.df = data.frame(cv = cv, l.v = l.v, n.v = n.v)
+library(ggplot2)
+library(dplyr)
+new.df %>% ggplot(aes(x = l.v,y=n.v))+geom_tile(aes(fill = cv))
+
+length(seq(from=1,to=3.25,by=0.25))
+
+length(seq(from=0.5,to=3.5,by=0.5))
+
+```
+

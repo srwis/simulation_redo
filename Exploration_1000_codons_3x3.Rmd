@@ -75,7 +75,7 @@ power_cal %>% select(one_of(c(
 temp=   power_cal %>% select(one_of(
   c("True.omega3.value", "True.CV", "BUSTED_PWR", "SRV_PWR")
 )) %>% melt(id.vars = c("True.omega3.value", "True.CV"))
- temp%>% ggplot(aes(x=True.omega3.value, y = True.CV))+ geom_tile(aes(fill = value))+ facet_grid(~variable)+
+ temp%>% ggplot(aes(x=True.omega3.value, y = True.CV))+ geom_raster(aes(fill = value))+ facet_grid(~variable)+
   labs(x =expression("True "*omega[3]), y = "True CV of SRV", color = "Power")
 
 ```
