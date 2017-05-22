@@ -50,26 +50,21 @@ compile <- function(cur.dir,csv){
       BUSTED.SRV.LR =test$`test results`$LR
       BUSTED.SRV.AICc = test$fits$`Unconstrained model`$`AIC-c`
       BUSTED.SRV.treelength = test$fits$`Unconstrained model`$`tree length`
-      
+      num_omega_rate = length(test$fits$`Unconstrained model`$`rate distributions`$FG[,1])
+      num_alpha_rate = length(test$fits$`Unconstrained model`$`rate distributions`$SRV[,1])
       #OMEGA values for BUSTED.SRV
       srv.omega.rates = test$fits$`Unconstrained model`$`rate distributions`$FG[,1]
-      names(srv.omega.rates) =
-      # BUSTED.SRV.omega3.MLE = test$fits$`Unconstrained model`$`rate distributions`$FG[3,1]
-      # BUSTED.SRV.omega3.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[3,2]
-      # BUSTED.SRV.omega2.MLE = test$fits$`Unconstrained model`$`rate distributions`$FG[2,1]
-      # BUSTED.SRV.omega2.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[2,2]
-      # BUSTED.SRV.omega1.MLE = test$fits$`Unconstrained model`$`rate distributions`$FG[1,1]
-      # BUSTED.SRV.omega1.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[1,2]
+      names(srv.omega.rates) = paste0("BUSTED.SRV.omega",seq(from = 1, to =num_omega_rate,by=1),".MLE")
+      srv.omega.props = test$fits$`Unconstrained model`$`rate distributions`$FG[,2]
+      names(srv.omega.props) = paste0("BUSTED.SRV.omega",seq(from = 1, to =num_omega_rate,by=1),".props")
       #ALPHA values for BUSTED.SRV
-      SRV.alpha3.MLE = test$fits$`Unconstrained model`$`rate distributions`$SRV[3,1]
-      SRV.alpha3.prop = test$fits$`Unconstrained model`$`rate distributions`$SRV[3,2]
-      SRV.alpha2.MLE = test$fits$`Unconstrained model`$`rate distributions`$SRV[2,1]
-      SRV.alpha2.prop = test$fits$`Unconstrained model`$`rate distributions`$SRV[2,2]
-      SRV.alpha1.MLE = test$fits$`Unconstrained model`$`rate distributions`$SRV[1,1]
-      SRV.alpha1.prop = test$fits$`Unconstrained model`$`rate distributions`$SRV[1,2]
+      srv.alpha.rates = test$fits$`Unconstrained model`$`rate distributions`$SRV[,1]
+      names(srv.alpha.rates) = paste0("BUSTED.SRV.alpha",seq(from = 1, to =num_alpha_rate,by=1),".MLE")
+      srv.alpha.props = test$fits$`Unconstrained model`$`rate distributions`$SRV[,2]
+      names(srv.alpha.props) = paste0("BUSTED.SRV.alpha",seq(from = 1, to =num_alpha_rate,by=1),"props")
       
-      mom2 = SRV.alpha3.MLE^2*SRV.alpha3.prop+ SRV.alpha1.MLE^2*SRV.alpha1.prop+ SRV.alpha2.MLE^2*SRV.alpha2.prop
-      mean= SRV.alpha3.MLE*SRV.alpha3.prop+ SRV.alpha1.MLE*SRV.alpha1.prop+ SRV.alpha2.MLE*SRV.alpha2.prop
+      mom2 = sum(srv.alpha.rates^2*srv.alpha.props)
+      mean= sum(srv.alpha.rates*srv.alpha.props)
       CV.SRV = sqrt(mom2-mean^2)/mean
       
     }
@@ -82,27 +77,31 @@ compile <- function(cur.dir,csv){
       BUSTED.LR = test$`test results`$LR
       BUSTED.AICc = test$fits$`Unconstrained model`$`AIC-c`
       BUSTED.treelength = test$fits$`Unconstrained model`$`tree length`
+      num_omega_rate = length(test$fits$`Unconstrained model`$`rate distributions`$FG[,1])
       
       #OMEGA values for BUSTED
-      BUSTED.omega3.MLE = test$fits$`Unconstrained model`$`rate distributions`$FG[3,1]
-      BUSTED.omega3.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[3,2]
-      BUSTED.omega2.MLE = test$fits$`Unconstrained model`$`rate distributions`$FG[2,1]
-      BUSTED.omega2.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[2,2]
-      BUSTED.omega1.MLE = test$fits$`Unconstrained model`$`rate distributions`$FG[1,1]
-      BUSTED.omega1.prop = test$fits$`Unconstrained model`$`rate distributions`$FG[1,2]
+      busted.omega.rates = test$fits$`Unconstrained model`$`rate distributions`$FG[,1]
+      names(busted.omega.rates) = paste0("BUSTED.omega",seq(from = 1, to =num_omega_rate,by=1),".MLE")
+      busted.omega.props = test$fits$`Unconstrained model`$`rate distributions`$FG[,2]
+      names(busted.omega.props) = paste0("BUSTED.omega",seq(from = 1, to =num_omega_rate,by=1),".MLE")
  
       
     }
     #print(FILE)
-    df <-rbind(df, c(FILE, BUSTED.LR, BUSTED.SRV.LR, CV.SRV, BUSTED.P, BUSTED.SRV.P,BUSTED.AICc,BUSTED.SRV.AICc,
-                         BUSTED.treelength ,BUSTED.SRV.treelength, Sites, Sequences,))
+    x<- c(FILE, BUSTED.LR, BUSTED.SRV.LR, CV.SRV, BUSTED.P, BUSTED.SRV.P,BUSTED.AICc,BUSTED.SRV.AICc,
+          BUSTED.treelength ,BUSTED.SRV.treelength, Sites, Sequences)
+    names(x) <- c("FILE", "BUSTED.LR","BUSTED.SRV.LR","CV.SRV", "BUSTED.P","BUSTED.SRV.P","BUSTED.AICc","BUSTED.SRV.AICc",
+                  "BUSTED.treelength", "BUSTED.SRV.treelength","Sites","Sequences")
+    df <-rbind(df, c(x,busted.omega.rates,busted.omega.props,
+                     srv.omega.rates,srv.omega.props,srv.alpha.rates,srv.alpha.props))
     
   }
-  df[,2:30]=as.numeric(unlist(df[,2:30]))
+
   write.csv(file = csv, x = df, row.names= F)
   # return(df)
 }
 
+#can't mix and match rate categories yet
 simulation_inputs <- function(dir,csv){
   require("stringr")
   require("jsonlite")
@@ -118,7 +117,7 @@ simulation_inputs <- function(dir,csv){
     
     x1 = x[2:(length(x)-1)]  %>% gsub(x=.,pattern="\\{",replacement ='\\[') %>% gsub(x=.,pattern ="\\}", replacement ="\\]")
     x1 = c(x[1],x1,x[length(x)])
-    num_rates=as.numeric(str_extract(x1[4], "[0-9]."))
+    num_rates=as.numeric(str_extract(x1[4], "[0-9]+"))
     
     end_1 = 6+(num_rates-2)
     start_2 = end_1+5
