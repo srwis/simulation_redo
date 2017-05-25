@@ -152,6 +152,16 @@ simulation_inputs <- function(dir,csv){
   write.csv(file = csv, x = setup.tab, row.names= F)
 }
 
+add_truth <- function(results, truth){
+
+  n <- truth %>% select(-FILE, -Sites) %>% colnames()
+  results[,n]<-NA
+  for( i in seq(from = 1, to = nrow(truth), by = 1)){
+    temp = which(str_detect(results$FILE,truth$FILE[i]))
+    results[temp,n]<-truth[i,3:length(truth)]
+  }
+  return(results)
+}
 
 
 

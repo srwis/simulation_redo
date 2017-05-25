@@ -9,13 +9,32 @@ lets explore the simulation data I have as of 5-9-2017. Which should be all of t
 library(dplyr)
 library(stringr)
 library(readr)
-All_5_8_17_processed <- read_csv("final_results/All_5_15_17_processed.csv")
+dat <- read_csv("final_results/All_5_25_17_processed.csv") #for some reason the TRUTH and results csv are not combining correctly
+results <- read_csv("final_results/All_5_25_17_results.csv")
+truth <- read_csv("final_results/All_5_25_17_Truth.csv")
+
 ```
+```{r}
+#for right now do this here
+add_truth <- function(results, truth){
+
+  n <- truth %>% select(-FILE, -Sites) %>% colnames()
+  results[,n]<-NA
+  for( i in seq(from = 1, to = nrow(truth), by = 1)){
+    temp = which(str_detect(results$FILE,truth$FILE[i]))
+    results[temp,n]<-truth[i,3:length(truth)]
+  }
+  return(results)
+}
+
+dat = add_truth(results,truth)
+```
+
 
 ```{r}
 #look at data
 
-All_5_8_17_processed %>% group_by(Sites, True.CV,True.omega3.value) %>% count()
+dat %>% group_by( Sites,True.CV,True.omega3.value) %>% count()
 ```
 
 
@@ -56,11 +75,11 @@ pwr_tab <- function(dat) {
 library(ggplot2)
 library(reshape2)
 
-All_5_8_17_processed %>% group_by(True.CV,True.omega3.value) %>% count()
+dat %>% group_by(True.CV,True.omega3.value) %>% count()
 ```
 
 ```{r}
-power_cal= pwr_tab(All_5_8_17_processed)
+power_cal= pwr_tab(dat)
 power_cal %>% select(one_of(c(
   "True.omega3.value", "True.CV", "BUSTED_PWR", "SRV_PWR"
   ))) %>% melt(id.vars = c("True.omega3.value", "True.CV")) %>% ggplot(aes(
