@@ -56,12 +56,12 @@ compile <- function(cur.dir,csv){
       srv.omega.rates = test$fits$`Unconstrained model`$`rate distributions`$FG[,1]
       names(srv.omega.rates) = paste0("BUSTED.SRV.omega",seq(from = 1, to =num_omega_rate,by=1),".MLE")
       srv.omega.props = test$fits$`Unconstrained model`$`rate distributions`$FG[,2]
-      names(srv.omega.props) = paste0("BUSTED.SRV.omega",seq(from = 1, to =num_omega_rate,by=1),".props")
+      names(srv.omega.props) = paste0("BUSTED.SRV.omega",seq(from = 1, to =num_omega_rate,by=1),".prop")
       #ALPHA values for BUSTED.SRV
       srv.alpha.rates = test$fits$`Unconstrained model`$`rate distributions`$SRV[,1]
       names(srv.alpha.rates) = paste0("BUSTED.SRV.alpha",seq(from = 1, to =num_alpha_rate,by=1),".MLE")
       srv.alpha.props = test$fits$`Unconstrained model`$`rate distributions`$SRV[,2]
-      names(srv.alpha.props) = paste0("BUSTED.SRV.alpha",seq(from = 1, to =num_alpha_rate,by=1),"props")
+      names(srv.alpha.props) = paste0("BUSTED.SRV.alpha",seq(from = 1, to =num_alpha_rate,by=1),".prop")
       
       mom2 = sum(srv.alpha.rates^2*srv.alpha.props)
       mean= sum(srv.alpha.rates*srv.alpha.props)
@@ -83,7 +83,7 @@ compile <- function(cur.dir,csv){
       busted.omega.rates = test$fits$`Unconstrained model`$`rate distributions`$FG[,1]
       names(busted.omega.rates) = paste0("BUSTED.omega",seq(from = 1, to =num_omega_rate,by=1),".MLE")
       busted.omega.props = test$fits$`Unconstrained model`$`rate distributions`$FG[,2]
-      names(busted.omega.props) = paste0("BUSTED.omega",seq(from = 1, to =num_omega_rate,by=1),".MLE")
+      names(busted.omega.props) = paste0("BUSTED.omega",seq(from = 1, to =num_omega_rate,by=1),".prop")
  
       
     }
@@ -92,13 +92,14 @@ compile <- function(cur.dir,csv){
           BUSTED.treelength ,BUSTED.SRV.treelength, Sites, Sequences)
     names(x) <- c("FILE", "BUSTED.LR","BUSTED.SRV.LR","CV.SRV", "BUSTED.P","BUSTED.SRV.P","BUSTED.AICc","BUSTED.SRV.AICc",
                   "BUSTED.treelength", "BUSTED.SRV.treelength","Sites","Sequences")
-    df <-rbind(df, c(x,busted.omega.rates,busted.omega.props,
-                     srv.omega.rates,srv.omega.props,srv.alpha.rates,srv.alpha.props))
+    df <-rbind(df, c(x,as.numeric(busted.omega.rates),as.numeric(busted.omega.props),
+                     assrv.omega.rates,srv.omega.props,srv.alpha.rates,srv.alpha.props))
     
   }
 
   write.csv(file = csv, x = df, row.names= F)
-  # return(df)
+  
+  # return(as.data.frame(df,stringAsFactors = FALSE))
 }
 
 #can't mix and match rate categories yet
@@ -126,72 +127,44 @@ simulation_inputs <- function(dir,csv){
 
     r= fromJSON(x1)
     omega_rates = r$`omega distribution`[,1]
-    names(omega_rates)= paste("Omega",seq(from=1, to = r$`omega rate count`, by =1), "value" )
+    names(omega_rates)= paste0("True.omega",seq(from=1, to = r$`omega rate count`, by =1), ".value" )
     omega_weights = r$`omega distribution`[,2]
-    names(omega_weights) = paste("Omega",seq(from=1, to = r$`omega rate count`, by =1), "prop" )
+    names(omega_weights) = paste0("Ture.omega",seq(from=1, to = r$`omega rate count`, by =1), ".prop" )
     
     Alpha_rates = r$`alpha distribution`[,1]
-    names(Alpha_rates)= paste("Alpha",seq(from=1, to = r$`alpha rate count`, by =1), "value" )
+    names(Alpha_rates)= paste0("True.alpha",seq(from=1, to = r$`alpha rate count`, by =1), ".value" )
     Alpha_weights = r$`alpha distribution`[,2]
-    names(Alpha_weights) = paste("Alpha",seq(from=1, to = r$`alpha rate count`, by =1), "prop" )
+    names(Alpha_weights) = paste0("True.alpha",seq(from=1, to = r$`alpha rate count`, by =1), ".prop" )
     
     mom2 = sum(Alpha_rates^2*Alpha_weights)
     
     mean = sum(Alpha_rates*Alpha_weights)
     
     CV.SRV = sqrt(mom2-mean^2)/mean
+    x<- c(r$sites,list[i],CV.SRV)
+    names(x)<-c("Sites","FILE","True.CV")
    
-    setup.tab = rbind(setup.tab,c(r$sites,list[i], omega_rates,omega_weights,Alpha_rates,Alpha_weights,CV.SRV))
+    setup.tab = rbind(setup.tab,c(x, omega_rates,omega_weights,Alpha_rates,Alpha_weights))
   }
 
 
-  #return(setup.tab)
+  #return(as.data.frame(setup.tab,stringsAsFactors = FALSE))
   write.csv(file = csv, x = setup.tab, row.names= F)
 }
 
-add_truth <- function(dat, truth){
-  dat = dat %>% mutate(True.CV = 1337)
-  dat = dat %>% mutate(True.omega3.value = 8008)
-  dat = dat %>% mutate(True.omega1.value = 8008)
-  dat = dat %>% mutate(True.omega2.value = 8008)
-  dat = dat %>% mutate(True.alpha3.value = 8008)
-  dat = dat %>% mutate(True.alpha2.value = 8008)
-  dat = dat %>% mutate(True.alpha1.value = 8008)
-  dat = dat %>% mutate(True.omega3.prop = 8008)
-  dat = dat %>% mutate(True.omega1.prop = 8008)
-  dat = dat %>% mutate(True.omega2.prop = 8008)
-  dat = dat %>% mutate(True.alpha3.prop = 8008)
-  dat = dat %>% mutate(True.alpha2.prop = 8008)
-  dat = dat %>% mutate(True.alpha1.prop = 8008)
-  for( i in seq(from = 1, to = nrow(truth), by = 1)){
-    temp = which(str_detect(dat$FILE,truth$File[i]))
-    dat$True.CV[temp] = truth$CV.SRV[i] 
-    dat$True.omega3.value[temp] = truth$Omega.3.value[i]
-    dat$True.omega2.value[temp] = truth$Omega.2.value[i]
-    dat$True.omega1.value[temp] = truth$Omega.1.value[i]
-    dat$True.alpha1.value[temp] = truth$Alpha.1.value[i]
-    dat$True.alpha2.value[temp] = truth$Alpha.2.value[i]
-    dat$True.alpha3.value[temp] = truth$Alpha.3.value[i]
-    dat$True.omega3.prop[temp] = truth$Omega.3.prop[i]
-    dat$True.omega2.prop[temp] = truth$Omega.2.prop[i]
-    dat$True.omega1.prop[temp] = truth$Omega.1.prop[i]
-    dat$True.alpha1.prop[temp] = truth$Alpha.1.prop[i]
-    dat$True.alpha2.prop[temp] = truth$Alpha.2.prop[i]
-    dat$True.alpha3.prop[temp] = truth$Alpha.3.prop[i]
-  }
-  return(dat)
-}
+
 
 
 
 process_dat <- function(dir, basename){
+  require("dplyr")
   temp = paste(dir,basename,"_Truth.csv", sep = "")
   simulation_inputs(dir,temp)
   truth = read.csv(temp, as.is = T)
   temp = paste(dir,basename,"_results.csv", sep = "")
   compile(dir,temp)
   dat = read.csv(temp, as.is = T)
-  dat = add_truth(dat, truth)
+  dat = full_join(dat, truth, by= c("FILE","Sites"))
   #dat = mutate(dat, Cat = str_extract(dat$FILE, "YesYes|YesNo|NoNo|NoYes"))
   dat$True.CV = round(dat$True.CV, 3)
   write.csv(file = paste(dir,basename,"_processed.csv", sep = ""),x = dat, row.names = F)
