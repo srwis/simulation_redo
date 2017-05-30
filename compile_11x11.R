@@ -38,10 +38,19 @@ compile <- function(cur.dir,csv){
     
     #now we get to the trickier part
     #reading in BUSTED and BUSTED-SRV results
+    #check if jsons[i] and jsons[i+1] are matched
+    j.i = str_extract(jsons[i],".*?(?=\\.BUSTED)" )
+    j.ii = str_extract(jsons[i+1],".*?(?=\\.BUSTED)" )
+    if(j.i == j.ii){
+      js =jsons[c(i,i+1)]
+      j.srv = js[which(str_detect(js,"SRV"))]
+      j.busted <- js[which(!str_detect(js,"SRV"))]
+    }    else {
+      print(c("Issue with:", FILE))
+    }
     
-    if (grepl("BUSTED-SRV",jsons[i])){
       #getting BUSTED-SRV results for a file
-      filepath = paste(cur.dir,jsons[i], sep="")
+      filepath = paste(cur.dir,j.srv, sep="")
       
       test = filepath %>% readLines() %>% gsub(x=.,pattern="nan",replacement ='"NA"') %>% fromJSON() #read in json     
       
@@ -53,26 +62,31 @@ compile <- function(cur.dir,csv){
       num_omega_rate = length(test$fits$`Unconstrained model`$`rate distributions`$FG[,1])
       num_alpha_rate = length(test$fits$`Unconstrained model`$`rate distributions`$SRV[,1])
       #OMEGA values for BUSTED.SRV
-      srv.omega.rates = test$fits$`Unconstrained model`$`rate distributions`$FG[,1]
+      srv.omega.rates = as.numeric(test$fits$`Unconstrained model`$`rate distributions`$FG[,1])
       names(srv.omega.rates) = paste0("BUSTED.SRV.omega",seq(from = 1, to =num_omega_rate,by=1),".MLE")
-      srv.omega.props = test$fits$`Unconstrained model`$`rate distributions`$FG[,2]
+      srv.omega.props = as.numeric(test$fits$`Unconstrained model`$`rate distributions`$FG[,2])
       names(srv.omega.props) = paste0("BUSTED.SRV.omega",seq(from = 1, to =num_omega_rate,by=1),".prop")
       #ALPHA values for BUSTED.SRV
-      srv.alpha.rates = test$fits$`Unconstrained model`$`rate distributions`$SRV[,1]
+      srv.alpha.rates = as.numeric(test$fits$`Unconstrained model`$`rate distributions`$SRV[,1])
       names(srv.alpha.rates) = paste0("BUSTED.SRV.alpha",seq(from = 1, to =num_alpha_rate,by=1),".MLE")
-      srv.alpha.props = test$fits$`Unconstrained model`$`rate distributions`$SRV[,2]
+      srv.alpha.props = as.numeric(test$fits$`Unconstrained model`$`rate distributions`$SRV[,2])
       names(srv.alpha.props) = paste0("BUSTED.SRV.alpha",seq(from = 1, to =num_alpha_rate,by=1),".prop")
       
       mom2 = sum(srv.alpha.rates^2*srv.alpha.props)
       mean= sum(srv.alpha.rates*srv.alpha.props)
       CV.SRV = sqrt(mom2-mean^2)/mean
       
-    }
-    if (grepl("BUSTED.json",jsons[i+1])){
-      filepath = paste(cur.dir,jsons[i+1], sep="")
+      
+      mom2 = sum(srv.alpha.rates^2*srv.alpha.props)
+      mean= sum(srv.alpha.rates*srv.alpha.props)
+      CV.SRV = sqrt(mom2-mean^2)/mean
+      
+    
+    
+      filepath = paste(cur.dir,j.busted, sep="")
       
       test = filepath %>% readLines() %>% gsub(x=.,pattern="nan",replacement ='"NA"') %>% fromJSON()
-      #print(filepath)    
+      #print(filepath)
       BUSTED.P = test$`test results`$p
       BUSTED.LR = test$`test results`$LR
       BUSTED.AICc = test$fits$`Unconstrained model`$`AIC-c`
@@ -80,20 +94,23 @@ compile <- function(cur.dir,csv){
       num_omega_rate = length(test$fits$`Unconstrained model`$`rate distributions`$FG[,1])
       
       #OMEGA values for BUSTED
-      busted.omega.rates = test$fits$`Unconstrained model`$`rate distributions`$FG[,1]
+      busted.omega.rates = as.numeric(test$fits$`Unconstrained model`$`rate distributions`$FG[,1])
       names(busted.omega.rates) = paste0("BUSTED.omega",seq(from = 1, to =num_omega_rate,by=1),".MLE")
-      busted.omega.props = test$fits$`Unconstrained model`$`rate distributions`$FG[,2]
+      busted.omega.props =as.numeric( test$fits$`Unconstrained model`$`rate distributions`$FG[,2])
       names(busted.omega.props) = paste0("BUSTED.omega",seq(from = 1, to =num_omega_rate,by=1),".prop")
+      
  
       
-    }
+    
     #print(FILE)
-    x<- c(FILE, BUSTED.LR, BUSTED.SRV.LR, CV.SRV, BUSTED.P, BUSTED.SRV.P,BUSTED.AICc,BUSTED.SRV.AICc,
-          BUSTED.treelength ,BUSTED.SRV.treelength, Sites, Sequences)
-    names(x) <- c("FILE", "BUSTED.LR","BUSTED.SRV.LR","CV.SRV", "BUSTED.P","BUSTED.SRV.P","BUSTED.AICc","BUSTED.SRV.AICc",
-                  "BUSTED.treelength", "BUSTED.SRV.treelength","Sites","Sequences")
-    df <-rbind(df, c(x,as.numeric(busted.omega.rates),as.numeric(busted.omega.props),
-                     assrv.omega.rates,srv.omega.props,srv.alpha.rates,srv.alpha.props))
+      x<- c(FILE, BUSTED.LR, BUSTED.SRV.LR, CV.SRV, BUSTED.P, BUSTED.SRV.P,BUSTED.AICc,BUSTED.SRV.AICc,
+            BUSTED.treelength ,BUSTED.SRV.treelength, Sites, Sequences)
+      x[2:length(x)] <- as.numeric(x[2:length(x)])
+      names(x) <- c("FILE", "BUSTED.LR","BUSTED.SRV.LR","CV.SRV", "BUSTED.P","BUSTED.SRV.P","BUSTED.AICc","BUSTED.SRV.AICc",
+                    "BUSTED.treelength", "BUSTED.SRV.treelength","Sites","Sequences")
+      df <-rbind(df, c(x, busted.omega.rates , busted.omega.props,
+                       srv.omega.rates, srv.omega.props,srv.alpha.rates,srv.alpha.props))
+      
     
   }
 
@@ -174,7 +191,7 @@ process_dat <- function(dir, basename){
   temp = paste(dir,basename,"_results.csv", sep = "")
   compile(dir,temp)
   dat = read.csv(temp, as.is = T)
-  dat = full_join(dat, truth, by= c("FILE","Sites"))
+  dat = add_truth(dat, truth)
   #dat = mutate(dat, Cat = str_extract(dat$FILE, "YesYes|YesNo|NoNo|NoYes"))
   dat$True.CV = round(dat$True.CV, 3)
   write.csv(file = paste(dir,basename,"_processed.csv", sep = ""),x = dat, row.names = F)
@@ -182,6 +199,6 @@ process_dat <- function(dir, basename){
 
 
 
-dir= "1000_Codons_11x11"
+dir= "final_results/1000_Codons/"
 basename = "All_5_8_17"
 all.dat = process_dat(dir, basename)
